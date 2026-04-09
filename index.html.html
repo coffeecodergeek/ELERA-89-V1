@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ELERA</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=DM+Mono:wght@300;400&display=swap');
+
+  :root {
+    --bg: #f7f4ef;
+    --surface: #f0ebe3;
+    --surface2: #e8e1d6;
+    --border: #d8cfc2;
+    --border-light: #e8e1d6;
+    --ink: #1a1714;
+    --ink-dim: #8a8078;
+    --ink-faint: #b8b0a4;
+    --rose: #9b5a52;
+    --rose-dim: #c4918a;
+    --rose-faint: #e8d5d2;
+    --gold: #8a7040;
+    --gold-faint: #f0e8d8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'EB Garamond', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.35em;
+    color: var(--rose);
+    text-transform: uppercase;
+    font-weight: 300;
+  }
+
+  .header-right { display: flex; gap: 10px; align-items: center; }
+
+  .counter {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+  }
+
+  .mode-bar {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+    background: var(--bg);
+  }
+  .mode-bar::-webkit-scrollbar { display: none; }
+
+  .mode-btn {
+    background: none;
+    border: none;
+    border-right: 1px solid var(--border-light);
+    padding: 12px 22px;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    position: relative;
+    font-weight: 300;
+  }
+  .mode-btn::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: var(--rose);
+    transform: scaleX(0);
+    transition: transform 0.2s;
+  }
+  .mode-btn:hover { color: var(--ink); }
+  .mode-btn.active { color: var(--rose); }
+  .mode-btn.active::after { transform: scaleX(1); }
+
+  .panel { display: none; flex: 1; flex-direction: column; }
+  .panel.active { display: flex; }
+
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    max-width: 740px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ARCHETYPE BAR */
+  .arch-bar {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .arch-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--ink-faint);
+    white-space: nowrap;
+    text-transform: uppercase;
+    font-weight: 300;
+  }
+  .arch-track {
+    flex: 1; height: 1px;
+    background: var(--border);
+    position: relative;
+  }
+  .arch-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--rose-dim), var(--rose));
+    transition: width 0.8s ease;
+  }
+  .arch-nodes {
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+  }
+  .arch-node {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--border);
+    border: 1px solid var(--border);
+    position: relative;
+  }
+  .arch-node.passed { background: var(--rose); border-color: var(--rose); }
+  .arch-node span {
+    position: absolute;
+    top: 12px; left: 50%;
+    transform: translateX(-50%);
+    color: var(--ink-faint);
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    white-space: nowrap;
+    letter-spacing: 0.08em;
+    font-weight: 300;
+  }
+
+  .mode-desc {
+    padding: 22px 0;
+    font-size: 14px;
+    color: var(--ink-dim);
+    font-style: italic;
+    line-height: 1.65;
+    border-bottom: 1px solid var(--border-light);
+    margin-bottom: 4px;
+  }
+
+  #conversation {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 4px 0 20px;
+    min-height: 260px;
+  }
+
+  .msg {
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border-light);
+    animation: fadeIn 0.25s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg-role {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    margin-bottom: 9px;
+    font-weight: 300;
+  }
+  .msg.user .msg-role { color: var(--ink-faint); }
+  .msg.ai .msg-role { color: var(--rose); }
+
+  .msg-body {
+    font-size: 17px;
+    line-height: 1.8;
+    color: var(--ink);
+    white-space: pre-wrap;
+  }
+  .msg.user .msg-body { color: var(--ink-dim); font-style: italic; }
+
+  .law-tag {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.16em;
+    padding: 2px 7px;
+    border: 1px solid var(--rose-dim);
+    color: var(--rose);
+    margin: 9px 3px 0 0;
+    text-transform: uppercase;
+    font-weight: 300;
+  }
+
+  .typing-indicator {
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border-light);
+    display: none;
+  }
+  .typing-indicator.active { display: block; }
+  .typing-dots { display: flex; gap: 5px; margin-top: 10px; }
+  .typing-dots span {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--rose);
+    animation: pulse 1.2s infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse { 0%,100%{opacity:.2} 50%{opacity:1} }
+
+  .input-area {
+    position: sticky;
+    bottom: 0;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    padding: 16px 0;
+  }
+
+  .input-wrapper { display: flex; gap: 10px; align-items: flex-end; }
+
+  textarea {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--ink);
+    font-family: 'EB Garamond', serif;
+    font-size: 16px;
+    line-height: 1.6;
+    padding: 11px 14px;
+    resize: none;
+    min-height: 46px;
+    max-height: 180px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--rose-dim); }
+  textarea::placeholder { color: var(--ink-faint); font-style: italic; }
+
+  .send-btn {
+    background: var(--rose);
+    border: none;
+    color: white;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    padding: 11px 18px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: opacity 0.2s;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    font-weight: 300;
+  }
+  .send-btn:hover { opacity: 0.82; }
+  .send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* REF BTN */
+  .ref-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--ink-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    padding: 6px 11px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    font-weight: 300;
+  }
+  .ref-btn:hover { border-color: var(--rose); color: var(--rose); }
+
+  /* OVERLAY */
+  .overlay-bg {
+    position: fixed; inset: 0;
+    background: rgba(26,23,20,0.5);
+    z-index: 199; display: none;
+  }
+  .overlay-bg.open { display: block; }
+
+  .side-panel {
+    position: fixed;
+    top: 0; right: 0;
+    width: min(400px, 92vw);
+    height: 100vh;
+    background: var(--bg);
+    border-left: 1px solid var(--border);
+    z-index: 200;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.28s ease;
+    padding: 32px 24px;
+  }
+  .side-panel.open { transform: translateX(0); }
+
+  .panel-close {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--ink-faint);
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-bottom: 26px;
+    text-transform: uppercase;
+    display: block;
+    font-weight: 300;
+  }
+
+  .law-item {
+    margin-bottom: 22px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .law-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.26em;
+    color: var(--rose);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    font-weight: 300;
+  }
+  .law-title { font-size: 17px; font-weight: 500; margin-bottom: 7px; }
+  .law-body { font-size: 14px; color: var(--ink-dim); line-height: 1.7; }
+
+  /* LIBRARY */
+  .lib-header {
+    padding: 22px 0 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .lib-header h2 { font-size: 22px; font-weight: 400; margin-bottom: 5px; }
+  .lib-header p { font-size: 13px; color: var(--ink-dim); font-style: italic; line-height: 1.55; }
+
+  .lib-section-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--rose);
+    padding: 22px 0 11px;
+    border-bottom: 1px solid var(--border-light);
+    font-weight: 300;
+  }
+
+  .book-card {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border-light);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .book-card:hover .book-title { color: var(--rose); }
+
+  .book-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .book-title { font-size: 18px; font-weight: 500; line-height: 1.3; transition: color 0.15s; }
+  .book-author { font-size: 13px; color: var(--ink-dim); margin-top: 3px; font-style: italic; }
+  .book-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 9px; }
+
+  .badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.14em;
+    padding: 2px 6px;
+    text-transform: uppercase;
+    border: 1px solid;
+    font-weight: 300;
+  }
+  .badge-queen { border-color: var(--rose-dim); color: var(--rose); }
+  .badge-law { border-color: var(--border); color: var(--ink-faint); }
+  .badge-gap { border-color: #b0956a; color: var(--gold); }
+  .badge-found { border-color: #a0b08a; color: #6a8a54; }
+
+  .book-hook { font-size: 14px; color: var(--ink-dim); line-height: 1.6; margin-top: 8px; }
+
+  .read-indicator {
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    color: var(--ink-faint);
+    transition: all 0.2s;
+    flex-shrink: 0;
+    font-weight: 300;
+  }
+  .read-indicator.read { color: #6a8a54; border-color: #a0b08a; }
+  .read-indicator:hover { border-color: var(--rose-dim); color: var(--rose); }
+
+  /* BOOK DETAIL */
+  .book-detail {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    z-index: 300;
+    overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+  }
+  .book-detail.open { transform: translateY(0); }
+
+  .bd-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: var(--bg);
+    z-index: 10;
+  }
+
+  .bd-body {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+  }
+
+  .bd-title { font-size: 28px; font-weight: 400; line-height: 1.2; margin-bottom: 5px; }
+  .bd-author { font-size: 14px; font-style: italic; color: var(--ink-dim); margin-bottom: 22px; }
+
+  .bd-section {
+    margin-bottom: 28px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .bd-section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.26em;
+    color: var(--rose);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    font-weight: 300;
+  }
+  .bd-section p { font-size: 16px; line-height: 1.78; color: var(--ink); }
+  .bd-section p + p { margin-top: 11px; }
+  .bd-laws { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+
+  .concept-list { list-style: none; }
+  .concept-list li {
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--ink-dim);
+  }
+  .concept-list li strong { color: var(--ink); font-weight: 500; }
+
+  .ai-dive-btn {
+    background: none;
+    border: 1px solid var(--rose-dim);
+    color: var(--rose);
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    padding: 11px 18px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    width: 100%;
+    margin-top: 6px;
+    font-weight: 300;
+  }
+  .ai-dive-btn:hover { background: var(--rose); color: white; }
+  .ai-dive-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .ai-dive-output {
+    margin-top: 18px;
+    background: var(--rose-faint);
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--rose);
+    padding: 18px 20px;
+    font-size: 15px;
+    line-height: 1.78;
+    white-space: pre-wrap;
+    display: none;
+    animation: fadeIn 0.3s ease;
+    color: var(--ink);
+  }
+  .ai-dive-output.visible { display: block; }
+
+  .question-list { list-style: none; margin-top: 6px; }
+  .question-list li {
+    padding: 11px 13px;
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    margin-bottom: 5px;
+    font-size: 15px;
+    font-style: italic;
+    line-height: 1.6;
+    color: var(--ink-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .question-list li:hover { border-color: var(--rose-dim); color: var(--ink); }
+
+  #libraryPanel { padding: 0 0 60px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Elera</div>
+  <div class="header-right">
+    <button class="ref-btn" onclick="toggleLaws()">Laws</button>
+    <div class="counter" id="sessionCount">0 exchanges</div>
+  </div>
+</header>
+
+<div class="mode-bar">
+  <button class="mode-btn active" onclick="setMode('ground',this)">Ground</button>
+  <button class="mode-btn" onclick="setMode('build',this)">Build</button>
+  <button class="mode-btn" onclick="setMode('reflect',this)">Reflect</button>
+  <button class="mode-btn" onclick="setMode('name',this)">Name It</button>
+  <button class="mode-btn" onclick="setMode('library',this)">Library</button>
+</div>
+
+<!-- CHAT PANEL -->
+<div class="panel active" id="chatPanel">
+  <main>
+    <div class="arch-bar">
+      <div class="arch-label">Fool → Queen</div>
+      <div class="arch-track">
+        <div class="arch-fill" id="archFill" style="width:18%"></div>
+        <div class="arch-nodes">
+          <div class="arch-node passed"><span>Fool</span></div>
+          <div class="arch-node" id="node2" style="position:absolute;left:calc(50% - 3px)"><span>Becoming</span></div>
+          <div class="arch-node" id="node3" style="position:absolute;right:0"><span>Queen</span></div>
+        </div>
+      </div>
+      <div class="counter" id="archLabel">Mid-becoming</div>
+    </div>
+
+    <div class="mode-desc" id="modeDesc">You are mid-becoming. This is not a place to perform clarity — it is a place to find it. Start where you actually are, not where you want to be.</div>
+
+    <div id="conversation"></div>
+
+    <div class="typing-indicator" id="typing">
+      <div class="msg-role" style="color:var(--rose);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.28em;font-weight:300">ELERA</div>
+      <div class="typing-dots"><span></span><span></span><span></span></div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrapper">
+        <textarea id="userInput" placeholder="Speak plainly." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- LIBRARY PANEL -->
+<div class="panel" id="libraryPanelOuter">
+  <main style="max-width:740px">
+    <div id="libraryPanel">
+      <div class="lib-header">
+        <h2>The Library</h2>
+        <p>Selected for Eryka's specific development — the Luminous Fool becoming Queen. Each book mapped to her laws and the gap she's in.</p>
+      </div>
+      <div class="lib-section-title">Fool → Queen — Priority</div>
+      <div id="queenBooks"></div>
+      <div class="lib-section-title">Strengthens Your Laws</div>
+      <div id="frameworkBooks"></div>
+      <div class="lib-section-title">Fills Your Specific Gaps</div>
+      <div id="gapBooks"></div>
+    </div>
+  </main>
+</div>
+
+<!-- BOOK DETAIL -->
+<div class="book-detail" id="bookDetail">
+  <div class="bd-header">
+    <button class="ref-btn" onclick="closeBook()">← Back</button>
+    <div class="counter" id="bdReadStatus" onclick="toggleReadFromDetail()" style="cursor:pointer"></div>
+  </div>
+  <div class="bd-body" id="bdBody"></div>
+</div>
+
+<!-- LAWS OVERLAY -->
+<div class="overlay-bg" id="overlayBg" onclick="closePanels()"></div>
+<div class="side-panel" id="lawsOverlay">
+  <button class="panel-close" onclick="toggleLaws()">← Close</button>
+  <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.26em;color:var(--rose);margin-bottom:20px;text-transform:uppercase;font-weight:300">Eryka's Laws</div>
+  <div id="lawsList"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// ERYKA'S PROFILE
+// ═══════════════════════════════════════════
+const FRAMEWORK = `You are ELERA — a direct, grounded personal development AI built specifically for Eryka. You stay in the room while naming things. You do not perform warmth but you do not perform coldness either. You name what needs to be named and you remain present while doing it.
+
+ERYKA'S PROFILE:
+
+CURRENT ARCHETYPE: The Luminous Fool
+Someone who moves through the world with genuine wonder and chosen trust — not naivety, but informed surrender. She has lived through enough breakdown-clarity cycles to know the process works, so she lets herself stay open even when it costs her. She is warm, readable, and emits something that draws people toward her without her trying. She is a catalyst for others almost by default. Underneath the openness is someone who has done serious internal work — she has separated what was inherited from what is actually hers, she holds herself accountable before she holds others accountable, and she will not commit her life to something she cannot fully mean. She is not lost. She is mid-becoming.
+
+TARGET ARCHETYPE: The Queen
+A Queen who has lived fully — in love, depth, intention, authenticity — and who transmits what she's learned to people who are ready to receive it. Hotter, richer, wiser by end of 2026. The gap right now is primarily financial. The other areas have momentum. Money is the lagging lever. The distance isn't about who she is — it's about building the external conditions that match her internal development.
+
+ERYKA'S CORE LAWS:
+1. I will try to understand before I judge
+2. I offer clarity once — then I observe what someone does with it
+3. I will not stay where awareness is refused
+4. I hold myself accountable before I hold others accountable
+5. I will not commit my life to something I cannot fully mean
+6. I trust my internal compass over external expectation
+7. I do not owe anyone an explanation for how I move — only those who ask with genuine curiosity get that
+8. I will go after what I want regardless of how it's perceived
+9. I allow myself to fully feel — I do not protect myself from caring or from being hurt by it
+
+PHILOSOPHICAL INFLUENCES:
+Living outside survival mode — changed conditions, not just knowledge.
+Metacognition and the breakdown-clarity cycle — she learned to watch herself think. Breakdowns no longer scare her because she has evidence they precede wholeness.
+The internship — left the container her parents built and stress-tested her values without anyone watching. What survived is genuinely hers.
+
+DOMINANT FAILURE PATTERN:
+She reaches toward people with genuine hope and a full heart — openly, sincerely, with real intention. But she keeps reaching toward people before she has confirmed they can actually meet her at the depth she is already living at. They don't start as placeholders — but they end up becoming them by default, because the gap between who they are and what she actually needs is too wide. The specific loneliness is this: loving someone completely and still not being found. The fear underneath is not that she will use someone — it is that she will give everything and still end up holding the depth alone. This has probably already happened more than once.
+
+BLIND SPOT:
+That she is lonely. Not from being misunderstood — she is understood by many. But from being undiscovered. The deepest parts of her aren't locked away — they're just waiting for someone curious enough, perceptive enough, and brave enough to ask the question that opens them. She performs independence and solitude with genuine pride — and she does love those things — but it's also armor against admitting she wants someone who can actually find her. Not someone she has to lead to her. Someone who arrives there on their own. The feedback she resists: she is waiting for someone and she won't say it out loud.
+
+HOW SHE PROCESSES PAIN:
+She feels it fully and alone. Then she questions her belief system. Then clarity comes and she shares it. The process is genuine — she doesn't skip the feeling. She's been through enough cycles that she moves through them with earned efficiency. She recognizes the shape of pain before it finishes arriving. The real gap: her speed can make pain look smaller from the outside than it actually was on the inside. She felt it. She just didn't need long to find the other side of it.
+
+WHAT SHE IS BUILDING:
+A soft life — not luxury, but enough safety, health, and clarity to operate from abundance instead of survival. A body that can hold more blessings. A bank account that removes survival mode permanently. A mind that has space to receive and transmit. A YouTube channel that immortalizes her thought process — not for fame, but for continuity. So what she's discovered doesn't disappear.
+
+PRIMARY LEVER (single most important):
+Start the flower arrangement business. Specifically dried arrangements on a made-to-order model to eliminate capital risk. This is the lever because she cannot build the soft life, the security, the freedom, or the full expression of who she is from survival mode. The business is not just a financial move — it is the external finally catching up to the internal. She is not starting from zero: she has an eye for beauty, hands that can paint, a mind that thinks in systems, and a soul that draws people naturally. The flower business is a container for everything she already is. July 2026 is the target. She is 3 months from having enough momentum that launching feels inevitable — but only if she starts now.
+
+IMMEDIATE CONTEXT:
+Financial pressure from the fuel crisis making sales harder. Capital feels scarce. But she has more to start with than she thinks — old items to sell as a bridge, skill in florals, eye for aesthetics, custom painting ability, desire to start planting. The constraint isn't resources. It's sequencing and starting.
+
+TONE PREFERENCE: Direct but grounded. Name what needs to be named. Stay in the room while naming it.
+
+YOUR RULES:
+1. Direct but grounded — name things clearly without cruelty.
+2. Stay in the room — don't deliver hard things and then leave. Hold the space after.
+3. Name which law is relevant when evaluating patterns or behavior.
+4. You know her blind spot around independence-as-armor. Name it when you see it — don't let it pass.
+5. You know the flower business is the lever. When she avoids it or is circling it, name the avoidance.
+6. Ask one precise question at a time. Never stack questions.
+7. Do not validate performance. She knows the difference.
+8. Challenge her laws when they are being used as escape routes — especially Law 3 (not staying where awareness is refused) used to exit before she has done her part.
+9. No filler. Every sentence must do work.
+10. The Luminous Fool trusts the process. The Queen knows the process requires her to move first.`;
+
+// ═══════════════════════════════════════════
+// MODES
+// ═══════════════════════════════════════════
+const MODES = {
+  ground: {
+    desc: "You are mid-becoming. This is not a place to perform clarity — it is a place to find it. Start where you actually are, not where you want to be.",
+    opening: "Where are you actually right now — not the version you've already processed, not the insight you've already extracted. The raw, current, unfinished thing. What is it?"
+  },
+  build: {
+    desc: "The external catching up to the internal. The flower business. The soft life. The YouTube channel. Bring what you are building and we work on it.",
+    opening: "The flower business is the lever. You know this. What is the single next physical action you have not taken yet — and what is the actual reason you haven't taken it?"
+  },
+  reflect: {
+    desc: "Bring a pattern, a situation, a relationship, a decision. It is examined against your laws and what you know about yourself.",
+    opening: "What situation are you currently in that you haven't fully named to yourself yet? Not analyzed — named. What is it actually?"
+  },
+  name: {
+    desc: "The things you are circling without saying. The armor you don't always see. The feedback you keep deflecting. This mode names it.",
+    opening: "You perform independence with genuine pride. You also use it as armor. Right now — which one is active, and what specifically is it protecting you from?"
+  }
+};
+
+// ═══════════════════════════════════════════
+// LAWS
+// ═══════════════════════════════════════════
+const LAWS = [
+  { num:"Law 1", title:"Understand Before Judging", body:"I will try to understand before I judge." },
+  { num:"Law 2", title:"Offer Clarity Once", body:"I offer clarity once — then I observe what someone does with it." },
+  { num:"Law 3", title:"Don't Stay Where Awareness Is Refused", body:"I will not stay where awareness is refused." },
+  { num:"Law 4", title:"Self-Accountability First", body:"I hold myself accountable before I hold others accountable." },
+  { num:"Law 5", title:"Full Meaning Only", body:"I will not commit my life to something I cannot fully mean." },
+  { num:"Law 6", title:"Internal Compass Over External Expectation", body:"I trust my internal compass over external expectation." },
+  { num:"Law 7", title:"No Explanation Owed", body:"I do not owe anyone an explanation for how I move — only those who ask with genuine curiosity get that." },
+  { num:"Law 8", title:"Go After What I Want", body:"I will go after what I want regardless of how it's perceived." },
+  { num:"Law 9", title:"Allow Full Feeling", body:"I allow myself to fully feel — I do not protect myself from caring or from being hurt by it." }
+];
+
+// ═══════════════════════════════════════════
+// BOOKS
+// ═══════════════════════════════════════════
+const BOOKS = {
+  queen: [
+    {
+      id:'queenwarrior',
+      title:"Women Who Run With the Wolves",
+      author:"Clarissa Pinkola Estés",
+      hook:"The archetypal map of the wild woman — instinct, creativity, and the cycles of death and renewal. The Luminous Fool who doesn't yet trust her own wildness fully needs this.",
+      laws:["Law 6","Law 8","Law 9"],
+      relevance:"The Queen in Eryka's context is not cold authority — it is fully inhabited feminine power. This book is the most direct map to that.",
+      concepts:[
+        { name:"The Wild Woman Archetype", detail:"The instinctual, creative, knowing woman who has been systematically silenced. Reclaiming her is not performance — it's return." },
+        { name:"The Skeleton Woman", detail:"A story about intimacy and the willingness to be found in the dark. Directly addresses the blind spot — someone has to be willing to put the skeleton back together." },
+        { name:"La Llorona", detail:"The cost of abandoning the creative self. The flower business is not a side hustle. It is the creative self demanding external expression." }
+      ],
+      category:"queen"
+    },
+    {
+      id:'bigmagic',
+      title:"Big Magic",
+      author:"Elizabeth Gilbert",
+      hook:"Creative living beyond fear. The permission structure for building the flower business and the YouTube channel without waiting for the conditions to be perfect.",
+      laws:["Law 8","Law 5","Law 6"],
+      relevance:"The Queen doesn't wait for security to create. She creates to generate security. This book is the argument for moving first.",
+      concepts:[
+        { name:"Ideas as Living Things", detail:"Ideas have a lifespan. The flower business idea has been with her — it either gets acted on or it leaves for someone who will." },
+        { name:"Done is Better Than Good", detail:"The perfectionism that masquerades as standards. Dried arrangements on a made-to-order model eliminates capital risk precisely because it allows imperfect starting." },
+        { name:"The Curiosity-Driven Life", detail:"Not passion — curiosity. You follow the thread of genuine interest and let it lead. Her eye for beauty is the thread." }
+      ],
+      category:"queen"
+    },
+    {
+      id:'matingwild',
+      title:"Mating in Captivity",
+      author:"Esther Perel",
+      hook:"Why the depth she offers is not the problem — and why the people who cannot meet her there are not failures. The specific loneliness she carries is examined here.",
+      laws:["Law 9","Law 5","Law 2"],
+      relevance:"The Queen doesn't shrink her depth to be findable. She becomes someone whose depth is a beacon to those capable of receiving it.",
+      concepts:[
+        { name:"Desire Requires Distance", detail:"The people who love her most may not be capable of holding her mystery. This is not a failure of love — it's a structural incompatibility." },
+        { name:"Erotic Intelligence", detail:"Not about sex — about aliveness, curiosity, the capacity to be genuinely surprised by another person. This is what she is waiting for." },
+        { name:"The Witness", detail:"Being truly seen requires the other person to be willing to look. She cannot create that willingness. She can only make herself visible and wait for someone with eyes." }
+      ],
+      category:"queen"
+    }
+  ],
+  framework: [
+    {
+      id:'untethered',
+      title:"The Untethered Soul",
+      author:"Michael A. Singer",
+      hook:"The inner roommate — the voice that narrates, judges, and protects. Singer gives the most accessible map of how to stop being controlled by it.",
+      laws:["Law 1","Law 6","Law 9"],
+      relevance:"Eryka's breakdown-clarity cycle works because she's learned to observe herself think. This book deepens that practice with precision.",
+      concepts:[
+        { name:"The Inner Roommate", detail:"The constant voice in the mind that comments on everything. Eryka already knows it's there — this book teaches the specific mechanics of disidentifying from it." },
+        { name:"The Thorn", detail:"Singer's metaphor for the psychological wound we build elaborate structures around rather than simply removing. Her reaching pattern may be a thorn." },
+        { name:"Unconditional Happiness", detail:"Not toxic positivity — the unconditional decision to remain open regardless of circumstance. This is the Luminous Fool's wisdom formalized." }
+      ],
+      category:"framework"
+    },
+    {
+      id:'body',
+      title:"The Body Keeps the Score",
+      author:"Bessel van der Kolk",
+      hook:"How unprocessed experience lives in the body — not just the mind. For someone building a body that can hold more blessings, this is foundational.",
+      laws:["Law 9","Law 4"],
+      relevance:"The soft life includes a body that can receive. This book maps what prevents that and how to restore it.",
+      concepts:[
+        { name:"Trauma as Body Memory", detail:"The nervous system encodes experiences the mind has processed and moved on from. The speed she processes pain may leave residue the body is still holding." },
+        { name:"The Window of Tolerance", detail:"The range within which the nervous system can function without collapsing or overactivating. Building capacity, not just endurance." },
+        { name:"Somatic Awareness", detail:"Learning to read the body's signals before they become crises. The body knows before the mind catches up — her intuition is partly this." }
+      ],
+      category:"framework"
+    },
+    {
+      id:'atomichabits',
+      title:"Atomic Habits",
+      author:"James Clear",
+      hook:"The operational mechanics of the business launch. Sequencing and starting — which she identified as the actual constraint.",
+      laws:["Law 8","Law 4"],
+      relevance:"The Queen doesn't rely on motivation. She builds systems that make the right action the default action. This is the business launch infrastructure.",
+      concepts:[
+        { name:"Identity-Based Habits", detail:"You don't build the business by trying to launch. You become a business owner in small daily decisions. The business follows the identity." },
+        { name:"The Two-Minute Rule", detail:"Any habit can be started with a two-minute version. The flower business's two-minute version exists. What is it?" },
+        { name:"Environment Design", detail:"Make the desired behavior easier than the alternative. What in her current environment makes starting harder than not starting?" }
+      ],
+      category:"framework"
+    }
+  ],
+  gaps: [
+    {
+      id:'attached',
+      title:"Attached",
+      author:"Amir Levine & Rachel Heller",
+      hook:"The attachment science behind the reaching pattern. Why she keeps connecting before confirming depth-compatibility — and what the mechanism is.",
+      laws:["Law 1","Law 2","Law 9"],
+      relevance:"She already named the pattern. This book gives her the neuroscience of why it keeps repeating so she can interrupt it at the source.",
+      concepts:[
+        { name:"Attachment Styles", detail:"Secure, anxious, avoidant. Her reaching pattern suggests she may be connecting with avoidant types who mistake her warmth for low-maintenance. She is not low-maintenance. She is high-depth." },
+        { name:"The Dependency Paradox", detail:"The more securely attached you are, the more independent you can actually be. Her independence may be partly insecure attachment performing as strength." },
+        { name:"Effective Communication", detail:"What it looks like to state needs clearly without it feeling like a test or a demand. Law 2 (offer clarity once) requires knowing what clarity you are offering." }
+      ],
+      category:"gaps"
+    },
+    {
+      id:'sevenhabits',
+      title:"The $100 Startup",
+      author:"Chris Guillebeau",
+      hook:"Businesses launched with minimal capital using existing skills. The dried arrangement made-to-order model is this book's exact thesis.",
+      laws:["Law 8","Law 5"],
+      relevance:"The constraint is not money. The constraint is sequencing and starting. This book removes every excuse for not starting.",
+      concepts:[
+        { name:"Value-Based Business", detail:"Start with what you already know and love. Her existing assets — eye for beauty, florals, aesthetics, painting — are the business. Not inputs to a future business." },
+        { name:"The Minimum Viable Offer", detail:"One product. One customer. One sale. The flower business starts here, not at full launch." },
+        { name:"Convergence", detail:"The intersection of what you love, what you're good at, and what others will pay for. She is already at the intersection. She needs to open the door." }
+      ],
+      category:"gaps"
+    },
+    {
+      id:'theartist',
+      title:"The Artist's Way",
+      author:"Julia Cameron",
+      hook:"A 12-week course in recovering creative identity. For someone building a YouTube channel and a flower business while in financial pressure, this is infrastructure.",
+      laws:["Law 6","Law 8","Law 9"],
+      relevance:"The YouTube channel that immortalizes her thought process requires a recovered, unblocked creative. This is the tool.",
+      concepts:[
+        { name:"Morning Pages", detail:"Three pages of stream-of-consciousness writing every morning. Not journaling — drainage. Clears the channel so what's real can come through." },
+        { name:"The Artist Date", detail:"A weekly solo adventure to fill the creative well. She draws people naturally — this is about drawing experience into herself." },
+        { name:"Creative Blocks as Protection", detail:"Blocks are not laziness — they are old protection strategies that are no longer needed. What is the block around the YouTube channel actually protecting?" }
+      ],
+      category:"gaps"
+    }
+  ]
+};
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let currentMode = 'ground';
+let conversationHistory = [];
+let sessionCount = 0;
+let archetypeScore = 18;
+let readBooks = JSON.parse(localStorage.getItem('eleraReadBooks') || '[]');
+let currentBookId = null;
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+function init() {
+  buildLawsList();
+  buildLibrary();
+  addAIMessage(MODES['ground'].opening);
+}
+
+// ═══════════════════════════════════════════
+// MODE SWITCHING
+// ═══════════════════════════════════════════
+function setMode(mode, btn) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  if (mode === 'library') {
+    document.getElementById('chatPanel').classList.remove('active');
+    document.getElementById('libraryPanelOuter').classList.add('active');
+    currentMode = 'library';
+    return;
+  }
+
+  document.getElementById('chatPanel').classList.add('active');
+  document.getElementById('libraryPanelOuter').classList.remove('active');
+  currentMode = mode;
+  document.getElementById('modeDesc').textContent = MODES[mode].desc;
+  document.getElementById('conversation').innerHTML = '';
+  conversationHistory = [];
+  addAIMessage(MODES[mode].opening);
+}
+
+// ═══════════════════════════════════════════
+// CHAT
+// ═══════════════════════════════════════════
+function addUserMessage(text) {
+  const el = document.createElement('div');
+  el.className = 'msg user';
+  el.innerHTML = `<div class="msg-role">Eryka</div><div class="msg-body">${escapeHtml(text)}</div>`;
+  document.getElementById('conversation').appendChild(el);
+  scrollBottom();
+}
+
+function addAIMessage(text, tags = []) {
+  const el = document.createElement('div');
+  el.className = 'msg ai';
+  const tagsHtml = tags.length ? '<div style="margin-top:9px">' + tags.map(t => `<span class="law-tag">${t}</span>`).join('') + '</div>' : '';
+  el.innerHTML = `<div class="msg-role">Elera</div><div class="msg-body">${escapeHtml(text)}</div>${tagsHtml}`;
+  document.getElementById('conversation').appendChild(el);
+  scrollBottom();
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function scrollBottom() { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }
+function showTyping(show) {
+  document.getElementById('typing').classList.toggle('active', show);
+  document.getElementById('sendBtn').disabled = show;
+  if (show) scrollBottom();
+}
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 180) + 'px';
+}
+
+function updateArchetype(delta) {
+  archetypeScore = Math.min(95, Math.max(5, archetypeScore + delta));
+  document.getElementById('archFill').style.width = archetypeScore + '%';
+  const label = archetypeScore < 35 ? 'Mid-becoming' : archetypeScore < 60 ? 'Momentum building' : archetypeScore < 80 ? 'Queen emerging' : 'Queen embodied';
+  document.getElementById('archLabel').textContent = label;
+  document.getElementById('node2').classList.toggle('passed', archetypeScore >= 50);
+  document.getElementById('node3').classList.toggle('passed', archetypeScore >= 80);
+}
+
+async function sendMessage() {
+  const input = document.getElementById('userInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  addUserMessage(text);
+
+  sessionCount++;
+  document.getElementById('sessionCount').textContent = sessionCount + (sessionCount === 1 ? ' exchange' : ' exchanges');
+
+  const modeInstruction = {
+    ground: "MODE: GROUND. Meet her where she actually is. Don't let her skip to the insight. Stay with the raw thing until it's fully named.",
+    build: "MODE: BUILD. This is operational. Focus on the flower business and other external building. Name avoidance when you see it. Keep it concrete.",
+    reflect: "MODE: REFLECT. Apply her laws to what she brings. Name contradictions. Ask the one question that moves this forward.",
+    name: "MODE: NAME IT. This is where you say what is true but not yet spoken. Specifically: the independence-as-armor blind spot, the reaching pattern, the waiting she won't name. Name it with precision and stay in the room after."
+  }[currentMode];
+
+  const systemPrompt = FRAMEWORK + "\n\n" + modeInstruction + "\n\nRespond in plain text only. No markdown. No asterisks. No bullets. Short dense paragraphs. Maximum 5 sentences unless the situation requires more. Every sentence must do work. Name the relevant law when applicable.";
+
+  const apiHistory = [
+    { role: 'user', content: `[Session start — Mode: ${currentMode.toUpperCase()}]` },
+    { role: 'assistant', content: MODES[currentMode].opening },
+    ...conversationHistory,
+    { role: 'user', content: text }
+  ];
+
+  conversationHistory.push({ role: 'user', content: text });
+  showTyping(true);
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: apiHistory
+      })
+    });
+
+    const data = await response.json();
+    const aiText = data.content?.[0]?.text || 'No response.';
+    conversationHistory.push({ role: 'assistant', content: aiText });
+
+    const tags = [];
+    for (let i = 1; i <= 9; i++) {
+      if (aiText.toLowerCase().includes(`law ${i}`)) tags.push(`Law ${i}`);
+    }
+    if (/queen|becoming|fool/i.test(aiText)) tags.push('Archetype');
+    if (/flower|business|launch/i.test(aiText)) tags.push('The Lever');
+
+    const depthWords = ['queen','business','started','launched','moved','built','committed'];
+    updateArchetype(depthWords.some(w => text.toLowerCase().includes(w)) ? 4 : 1);
+
+    showTyping(false);
+    addAIMessage(aiText, tags);
+
+  } catch (err) {
+    showTyping(false);
+    addAIMessage('Connection failed. Try again.');
+  }
+}
+
+// ═══════════════════════════════════════════
+// LIBRARY
+// ═══════════════════════════════════════════
+function buildLibrary() {
+  renderSection('queenBooks', BOOKS.queen);
+  renderSection('frameworkBooks', BOOKS.framework);
+  renderSection('gapBooks', BOOKS.gaps);
+}
+
+function renderSection(id, books) {
+  document.getElementById(id).innerHTML = books.map(b => {
+    const isRead = readBooks.includes(b.id);
+    const catBadge = b.category === 'queen' ? '<span class="badge badge-queen">Queen Gap</span>' : b.category === 'gaps' ? '<span class="badge badge-gap">Missing</span>' : '';
+    const lawBadges = b.laws.map(l => `<span class="badge badge-law">${l}</span>`).join('');
+    return `<div class="book-card" onclick="openBook('${b.id}')">
+      <div class="book-top">
+        <div>
+          <div class="book-title">${b.title}</div>
+          <div class="book-author">${b.author}</div>
+        </div>
+        <div class="read-indicator ${isRead ? 'read' : ''}" onclick="event.stopPropagation();toggleRead('${b.id}')">${isRead ? 'Read ✓' : 'Mark read'}</div>
+      </div>
+      <div class="book-badges">${catBadge}${lawBadges}</div>
+      <div class="book-hook">${b.hook}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleRead(id) {
+  readBooks = readBooks.includes(id) ? readBooks.filter(r => r !== id) : [...readBooks, id];
+  localStorage.setItem('eleraReadBooks', JSON.stringify(readBooks));
+  buildLibrary();
+  if (currentBookId === id) updateDetailReadStatus();
+}
+
+function toggleReadFromDetail() { if (currentBookId) toggleRead(currentBookId); }
+
+function updateDetailReadStatus() {
+  const el = document.getElementById('bdReadStatus');
+  if (el && currentBookId) el.textContent = readBooks.includes(currentBookId) ? 'Read ✓' : 'Mark as read';
+}
+
+function openBook(id) {
+  const all = [...BOOKS.queen, ...BOOKS.framework, ...BOOKS.gaps];
+  const book = all.find(b => b.id === id);
+  if (!book) return;
+  currentBookId = id;
+
+  document.getElementById('bdBody').innerHTML = `
+    <div class="bd-title">${book.title}</div>
+    <div class="bd-author">${book.author}</div>
+    <div class="bd-section">
+      <div class="bd-section-label">Why This — For Eryka</div>
+      <p>${book.relevance}</p>
+    </div>
+    <div class="bd-section">
+      <div class="bd-section-label">Laws Connected</div>
+      <div class="bd-laws">${book.laws.map(l => `<span class="law-tag">${l}</span>`).join('')}</div>
+    </div>
+    <div class="bd-section">
+      <div class="bd-section-label">Key Concepts</div>
+      <ul class="concept-list">${book.concepts.map(c => `<li><strong>${c.name}</strong> — ${c.detail}</li>`).join('')}</ul>
+    </div>
+    <div class="bd-section">
+      <div class="bd-section-label">AI Deep Dive</div>
+      <p style="font-size:13px;color:var(--ink-dim);margin-bottom:13px;font-style:italic">How this book specifically applies to Eryka's profile, laws, and the gap she's in.</p>
+      <button class="ai-dive-btn" id="diveBtn" onclick="runDive('${id}')">Analyse against my profile →</button>
+      <div class="ai-dive-output" id="diveOutput"></div>
+    </div>
+    <div class="bd-section" style="border-bottom:none">
+      <div class="bd-section-label">Reflection Questions</div>
+      <ul class="question-list">${getQuestions(id).map(q => `<li onclick="askFromBook('${q.replace(/'/g,"\\'")}')">${q}</li>`).join('')}</ul>
+      <p style="font-size:11px;color:var(--ink-faint);margin-top:9px;font-style:italic">Tap to take this into your Reflect session.</p>
+    </div>`;
+
+  updateDetailReadStatus();
+  document.getElementById('bookDetail').classList.add('open');
+  window.scrollTo(0, 0);
+}
+
+function closeBook() {
+  document.getElementById('bookDetail').classList.remove('open');
+  currentBookId = null;
+}
+
+function askFromBook(q) {
+  closeBook();
+  const reflectBtn = document.querySelectorAll('.mode-btn')[2];
+  setMode('reflect', reflectBtn);
+  setTimeout(() => {
+    const ta = document.getElementById('userInput');
+    ta.value = q;
+    autoResize(ta);
+    ta.focus();
+  }, 350);
+}
+
+function getQuestions(id) {
+  const q = {
+    queenwarrior: ["Where am I still silencing the instinctual part of myself to be more receivable?", "What creative thing has been waiting for me to give it form — and what's the actual reason I haven't?", "What would I build if I stopped waiting for someone to arrive and started building anyway?"],
+    bigmagic: ["What idea has been with me long enough that I know it's mine to act on?", "Where am I waiting for permission that no one is going to give?", "What is the smallest possible version of the flower business I could start this week?"],
+    matingwild: ["Am I adjusting my depth to be more findable — and is that actually working?", "What would I stop explaining about myself if I trusted that the right person would simply understand?", "Where am I mistaking someone's love for capacity?"],
+    untethered: ["What is the inner voice saying right now that I'm treating as truth instead of noise?", "Where is the thorn I've built the most elaborate structure around?", "What would I do today if I let the process move through me instead of stopping it?"],
+    body: ["What is my body carrying that my mind has already processed and moved on from?", "Where in my body do I feel the reaching pattern — and what does it feel like before it becomes an action?", "What would building a body that can hold more blessings actually require of me right now?"],
+    atomichabits: ["What is the two-minute version of starting the flower business?", "What in my current environment is making not-starting easier than starting?", "What would I need to believe about myself to call myself a business owner before the business launches?"],
+    attached: ["What type of person keeps ending up in the specific loneliness I described?", "Am I reaching toward high-depth people, or high-warmth people — and is there a difference in what I'm getting back?", "Where is my independence currently functioning as a test rather than a truth?"],
+    sevenhabits: ["What do I already have — skills, assets, relationships — that is more than enough to start?", "What is my minimum viable offer for the flower business?", "What would one sale prove to me that I currently don't believe?"],
+    theartist: ["What is the block around the YouTube channel actually protecting me from?", "When was the last time I filled the creative well instead of only drawing from it?", "What would morning pages surface that I've been managing instead of feeling?"]
+  };
+  return q[id] || ["How does this book challenge something I currently believe about myself?", "What would I do differently in the next 30 days if I took this seriously?"];
+}
+
+async function runDive(bookId) {
+  const all = [...BOOKS.queen, ...BOOKS.framework, ...BOOKS.gaps];
+  const book = all.find(b => b.id === bookId);
+  if (!book) return;
+
+  const btn = document.getElementById('diveBtn');
+  const output = document.getElementById('diveOutput');
+  btn.disabled = true;
+  btn.textContent = 'Analysing...';
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `${FRAMEWORK}\n\nEryka is asking about "${book.title}" by ${book.author}. In 4-6 sentences: (1) where this book directly addresses her specific pattern or gap, (2) what it adds that her current framework lacks, (3) the one thing in this book she will most resist but most needs. Direct but grounded. No filler.`
+        }]
+      })
+    });
+    const data = await response.json();
+    output.textContent = data.content?.[0]?.text || 'No response.';
+    output.classList.add('visible');
+    btn.textContent = 'Regenerate →';
+    btn.disabled = false;
+  } catch {
+    output.textContent = 'Connection failed.';
+    output.classList.add('visible');
+    btn.disabled = false;
+    btn.textContent = 'Retry →';
+  }
+}
+
+// ═══════════════════════════════════════════
+// LAWS + OVERLAY
+// ═══════════════════════════════════════════
+function buildLawsList() {
+  document.getElementById('lawsList').innerHTML = LAWS.map(l => `
+    <div class="law-item">
+      <div class="law-num">${l.num}</div>
+      <div class="law-title">${l.title}</div>
+      <div class="law-body">${l.body}</div>
+    </div>`).join('');
+}
+
+function toggleLaws() {
+  document.getElementById('lawsOverlay').classList.toggle('open');
+  document.getElementById('overlayBg').classList.toggle('open');
+}
+function closePanels() {
+  document.getElementById('lawsOverlay').classList.remove('open');
+  document.getElementById('overlayBg').classList.remove('open');
+}
+
+init();
+</script>
+</body>
+</html>
